@@ -132,21 +132,24 @@ fn the_pointer_moved_onto_a_plate_selects_it() {
 }
 
 #[test]
-fn the_wheel_selects_from_the_top_when_nothing_is_selected() {
-    for delta in [-24.0, 24.0] {
-        let mut harness = harness(Beside::Answers);
-        wheel(&mut harness, delta);
-        assert_eq!(
-            harness.state().menu.selected(),
-            Some(0),
-            "turned by {delta}: the first entry"
-        );
-    }
+fn the_wheel_walks_as_the_arrows_when_nothing_is_selected() {
+    let mut menu = harness(Beside::Answers);
+    wheel(&mut menu, -24.0);
+    assert_eq!(
+        menu.state().menu.selected(),
+        Some(0),
+        "toward the user: the first entry, as Down"
+    );
+    wheel(&mut menu, -24.0);
+    assert_eq!(menu.state().menu.selected(), Some(1), "then on, down");
 
-    let mut harness = harness(Beside::Answers);
-    wheel(&mut harness, -24.0);
-    wheel(&mut harness, -24.0);
-    assert_eq!(harness.state().menu.selected(), Some(1), "then on, down");
+    let mut menu = harness(Beside::Answers);
+    wheel(&mut menu, 24.0);
+    assert_eq!(
+        menu.state().menu.selected(),
+        Some(3),
+        "away from the user: the last entry, as Up"
+    );
 }
 
 #[test]

@@ -293,7 +293,7 @@ time:
 
 | input | what it does |
 | --- | --- |
-| `Up`, `Down`, wheel | walk, wrapping; the wheel with no entry selected selects the first |
+| `Up`, `Down`, wheel | walk, wrapping |
 | `PageUp`, `PageDown` | walk by the plates shown, stopping at the ends |
 | `Home`, `End` | the first and the last entry; with a query, the caret to its start and end |
 | `Right`, the zone `›` | step into the entry |
@@ -317,7 +317,8 @@ The keys are the table `KEYS`, each with its `Walk`: the menu acts on it,
 and a caller lists the keys of its window from it.
 
 A menu opens with no entry selected. Then `Down`, `PageDown`, `Home` and the
-wheel select the first entry, `Up`, `PageUp` and `End` the last, the pointer
+wheel turned toward the user select the first entry, `Up`, `PageUp`, `End` and
+the wheel turned away the last, the pointer
 moved onto an entry selects it, `Right` and `Enter` do nothing, and a query
 selects its first hit.
 

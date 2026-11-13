@@ -489,10 +489,7 @@ impl PlateMenu {
             if steps != 0 {
                 scrolled -= steps as f32 * SCROLL_STEP;
                 for _ in 0..steps.abs() {
-                    match state.selection() {
-                        None => state.select_first(),
-                        Some(_) => state.move_selection(if steps > 0 { -1 } else { 1 }),
-                    }
+                    state.move_selection(if steps > 0 { -1 } else { 1 });
                 }
             }
 
