@@ -1,0 +1,9 @@
+# A key the menu takes is a row of `KEYS` (`RULE keys.table`).
+disallowed-methods = [
+    { path = "egui::InputState::key_pressed", reason = "a key is a row of `KEYS` (RULE keys.table)" },
+    { path = "egui::InputState::key_down", reason = "a key is a row of `KEYS` (RULE keys.table)" },
+    { path = "egui::InputState::key_released", reason = "a key is a row of `KEYS` (RULE keys.table)" },
+    { path = "egui::InputState::consume_key", reason = "a key is a row of `KEYS` (RULE keys.table)" },
+    { path = "egui::InputState::consume_shortcut", reason = "a key is a row of `KEYS` (RULE keys.table)" },
+    { path = "egui::InputState::count_and_consume_key", reason = "a key is a row of `KEYS` (RULE keys.table)" },
+]

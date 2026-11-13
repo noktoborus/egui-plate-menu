@@ -34,6 +34,12 @@ RULE module.subject : one module is one subject
 RULE docs.deny = `#![deny(missing_docs)]`; every public item is documented
 RULE comment.body : no inline comments inside a function body
 RULE format = `cargo fmt`, rustfmt with its defaults
+RULE keys.table : a key the menu takes is a row of `KEYS`, with its `Walk`
+WHY  a caller lists the keys of its window from the table; a key read
+     elsewhere is a key it does not know of
+THEN `clippy.toml` refuses `key_pressed`, `consume_key` and their kin; the
+     one place that reads them carries `#[expect(clippy::disallowed_methods)]`
+REF  src/keys.rs
 
 ## Documentation
 
