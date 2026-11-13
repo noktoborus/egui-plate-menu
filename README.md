@@ -296,7 +296,7 @@ time:
 
 | input | what it does |
 | --- | --- |
-| `Up`, `Down`, wheel | walk, wrapping; a notch of the wheel is one entry, a turn of a touchpad one entry for the height of a plate, and the scroll it goes on with by itself after the fingers left it nothing |
+| `Up`, `Down`, wheel | walk, wrapping; a notch of the wheel is one entry, however many lines or points the browser counts for it, a turn of a touchpad one entry for the height of a plate, and the scroll it goes on with by itself after the fingers left it nothing |
 | `PageUp`, `PageDown` | walk by the plates shown, stopping at the ends |
 | `Home`, `End` | the first and the last entry; with a query, the caret to its start and end |
 | `Right`, the zone `›` | step into the entry |

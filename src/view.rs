@@ -813,13 +813,15 @@ fn touched(input: &egui::InputState) -> bool {
 /// How many plates the wheel of this frame turned, a positive count away from
 /// the user.
 ///
-/// It is read from the events and not from the scroll the toolkit smooths: a
-/// notch is a line, and a line is one plate, however many frames the toolkit
-/// would spread it over and however fast it says a line goes. A turn given in
-/// points — a touchpad, a wheel of fine steps — counts a plate for the height
-/// of one. What a touchpad goes on scrolling by itself after the fingers left
-/// it is no turn of anybody's, and moves nothing.
+/// It is read from the events and not from the scroll the toolkit smooths.
+/// One event of a wheel is one notch, and a notch is one plate, whatever it
+/// counts: a browser says three lines (Firefox) or a hundred points (Chrome)
+/// for a notch. A turn smaller than a whole — a wheel of fine steps — and
+/// every turn of a touchpad count a plate for a line or for the height of
+/// one. What a touchpad goes on scrolling by itself after the fingers left it
+/// is no turn of anybody's, and moves nothing.
 fn wheel_plates(events: &[egui::Event], plate: f32, page: isize) -> f32 {
+    let plate = plate.max(1.0);
     events
         .iter()
         .filter_map(|event| match event {
@@ -828,11 +830,15 @@ fn wheel_plates(events: &[egui::Event], plate: f32, page: isize) -> f32 {
                 delta,
                 source,
                 ..
-            } if *source != egui::MouseWheelSource::Momentum => Some(match unit {
-                egui::MouseWheelUnit::Line => delta.y,
-                egui::MouseWheelUnit::Point => delta.y / plate.max(1.0),
-                egui::MouseWheelUnit::Page => delta.y * page as f32,
-            }),
+            } if *source != egui::MouseWheelSource::Momentum => {
+                let plates = match unit {
+                    egui::MouseWheelUnit::Line => delta.y,
+                    egui::MouseWheelUnit::Point => delta.y / plate,
+                    egui::MouseWheelUnit::Page => return Some(delta.y * page as f32),
+                };
+                let notch = *source != egui::MouseWheelSource::Trackpad && plates.abs() >= 1.0;
+                Some(if notch { plates.signum() } else { plates })
+            }
             _ => None,
         })
         .sum()
@@ -1437,13 +1443,16 @@ mod tests {
         let mut menu = PlateMenu::new();
         menu.open(items(5)).expect("the menu opens");
 
-        let scrolled = wheel(
-            &context,
-            &mut menu,
-            egui::MouseWheelUnit::Line,
-            -3.0,
-            egui::MouseWheelSource::Wheel,
-        );
+        let mut scrolled = Vec2::ZERO;
+        for _ in 0..3 {
+            scrolled = wheel(
+                &context,
+                &mut menu,
+                egui::MouseWheelUnit::Line,
+                -1.0,
+                egui::MouseWheelSource::Wheel,
+            );
+        }
         assert_eq!(
             menu.selected(),
             Some(2),
@@ -1480,6 +1489,48 @@ mod tests {
             );
             assert_eq!(menu.selected(), Some(notch - 1), "notch {notch}");
         }
+    }
+
+    #[test]
+    fn a_notch_of_a_browser_is_one_plate_whatever_it_counts() {
+        let context = context(600.0);
+        let mut menu = PlateMenu::new();
+        menu.open(items(9)).expect("the menu opens");
+        let notches = [
+            (egui::MouseWheelUnit::Line, -3.0, "Firefox: three lines"),
+            (
+                egui::MouseWheelUnit::Point,
+                -100.0,
+                "Chrome: a hundred points",
+            ),
+            (egui::MouseWheelUnit::Point, -120.0, "a hundred and twenty"),
+        ];
+        for (notch, (unit, delta, says)) in notches.into_iter().enumerate() {
+            wheel(
+                &context,
+                &mut menu,
+                unit,
+                delta,
+                egui::MouseWheelSource::Unknown,
+            );
+            assert_eq!(menu.selected(), Some(notch), "{says}");
+        }
+    }
+
+    #[test]
+    fn a_touchpad_walks_a_plate_for_the_height_of_each() {
+        let context = context(600.0);
+        let plate = plate_height_of(&context);
+        let mut menu = PlateMenu::new();
+        menu.open(items(9)).expect("the menu opens");
+        wheel(
+            &context,
+            &mut menu,
+            egui::MouseWheelUnit::Point,
+            -plate * 3.0,
+            egui::MouseWheelSource::Trackpad,
+        );
+        assert_eq!(menu.selected(), Some(2));
     }
 
     #[test]
