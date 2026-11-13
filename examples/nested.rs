@@ -2,14 +2,14 @@
 //! typing searches the whole tree at once.
 //!
 //! ```sh
-//! cargo run -p plate-menu --example nested
+//! cargo run -p egui-plate-menu --example nested
 //! ```
 
-use plate_menu::{MenuItem, PlateMenu};
+use egui_plate_menu::{MenuItem, PlateMenu};
 
 fn main() -> eframe::Result {
     eframe::run_native(
-        "plate-menu: nested",
+        "egui-plate-menu: nested",
         eframe::NativeOptions::default(),
         Box::new(|_| Ok(Box::new(Example::new()))),
     )

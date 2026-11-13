@@ -1,5 +1,5 @@
 [package]
-name = "plate-menu"
+name = "egui-plate-menu"
 description = "egui widget drawing a menu of wide plates, walked by the arrow keys and searched by typing"
 version = "2.0.0"
 edition = "2024"

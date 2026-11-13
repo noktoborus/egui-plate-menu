@@ -3,7 +3,7 @@
 
 use egui_kittest::Harness;
 use egui_kittest::kittest::{NodeT, Queryable};
-use plate_menu::{MenuItem, PlateMenu};
+use egui_plate_menu::{MenuItem, PlateMenu};
 
 fn harness(items: Vec<MenuItem>) -> Harness<'static, PlateMenu> {
     let mut menu = PlateMenu::new();

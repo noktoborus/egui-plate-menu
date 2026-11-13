@@ -3,7 +3,7 @@
 
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use plate_menu::{Beside, Chosen, MenuItem, PlateMenu};
+use egui_plate_menu::{Beside, Chosen, MenuItem, PlateMenu};
 
 /// Where a click lands beside the menu, which stands in the middle.
 const BESIDE: egui::Pos2 = egui::pos2(5.0, 5.0);
@@ -52,7 +52,7 @@ fn in_a_level(beside: Beside) -> Harness<'static, Shown> {
 
 fn shown(
     mut menu: PlateMenu,
-    open: impl FnOnce(&mut PlateMenu) -> plate_menu::Result<()>,
+    open: impl FnOnce(&mut PlateMenu) -> egui_plate_menu::Result<()>,
 ) -> Harness<'static, Shown> {
     open(&mut menu).expect("an entry can be chosen");
     let mut harness = Harness::builder()

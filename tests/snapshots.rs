@@ -2,12 +2,12 @@
 //!
 //! Each picture is both a test and an illustration of the README: a change
 //! that moves a pixel of the menu fails here, and the README shows what the
-//! menu looks like now. `UPDATE_SNAPSHOTS=1 cargo test -p plate-menu --test
+//! menu looks like now. `UPDATE_SNAPSHOTS=1 cargo test -p egui-plate-menu --test
 //! snapshots` draws them again.
 
 use egui_kittest::kittest::Queryable;
 use egui_kittest::{Harness, SnapshotOptions};
-use plate_menu::{Detail, MenuItem, PlateMenu};
+use egui_plate_menu::{Detail, MenuItem, PlateMenu};
 
 /// Where the pictures are kept: beside the README, which shows them.
 const PICTURES: &str = "img";

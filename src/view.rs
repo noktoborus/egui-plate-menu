@@ -83,7 +83,7 @@ pub struct Chosen {
 /// the levels, the search and the keys.
 ///
 /// ```no_run
-/// # use plate_menu::{MenuItem, PlateMenu};
+/// # use egui_plate_menu::{MenuItem, PlateMenu};
 /// # fn f(context: &egui::Context) {
 /// let mut menu = PlateMenu::new();
 /// menu.open(vec![MenuItem::new("copy", "Copy")])

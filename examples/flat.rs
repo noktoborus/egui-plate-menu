@@ -1,14 +1,14 @@
 //! The smallest menu there is: a few entries, and what was chosen printed.
 //!
 //! ```sh
-//! cargo run -p plate-menu --example flat
+//! cargo run -p egui-plate-menu --example flat
 //! ```
 
-use plate_menu::{MenuItem, PlateMenu};
+use egui_plate_menu::{MenuItem, PlateMenu};
 
 fn main() -> eframe::Result {
     eframe::run_native(
-        "plate-menu: flat",
+        "egui-plate-menu: flat",
         eframe::NativeOptions::default(),
         Box::new(|_| Ok(Box::new(Example::default()))),
     )

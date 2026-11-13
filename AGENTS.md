@@ -13,10 +13,10 @@ READ   RULE is binding. WHY is context, not negotiable. EX is literal.
 
 ## Project
 
-RULE product = plate-menu, an egui widget: a menu of wide plates, walked by
+RULE product = egui-plate-menu, an egui widget: a menu of wide plates, walked by
      the keys and the pointer and searched by typing
 REF  README.md
-RULE users = zyterm and obusina, each through a path dependency
+RULE users = zyterm and obusina, each through git at one commit (`rev`)
 WHY  one menu, one egui; two copies drift apart
 THEN a change for one user keeps the other working; a behaviour one of them
      does not want is an option of the menu, its default the old behaviour

@@ -1,4 +1,4 @@
-# plate-menu
+# egui-plate-menu
 
 A menu of wide plates for egui: it stands in the middle of the window, is walked
 by the keys and the pointer and is searched by typing.
@@ -6,7 +6,7 @@ by the keys and the pointer and is searched by typing.
 ## Scope
 
 ```rust,no_run
-use plate_menu::{Beside, MenuItem, PlateMenu};
+use egui_plate_menu::{Beside, MenuItem, PlateMenu};
 
 fn frame(context: &egui::Context, menu: &mut PlateMenu, asked: bool) {
     if asked {
@@ -351,7 +351,7 @@ The pictures are tests: `tests/snapshots.rs` renders the menu with
 pixel fails there, so the pictures show the menu as it is.
 
 ```sh
-UPDATE_SNAPSHOTS=1 cargo test -p plate-menu --test snapshots   # draw them again
+UPDATE_SNAPSHOTS=1 cargo test -p egui-plate-menu --test snapshots   # draw them again
 ```
 
 `build.rs` puts them into `cargo doc` as `data:` URLs.
@@ -359,8 +359,8 @@ UPDATE_SNAPSHOTS=1 cargo test -p plate-menu --test snapshots   # draw them again
 ## Examples
 
 ```sh
-cargo run -p plate-menu --example flat     # a few entries and a separator
-cargo run -p plate-menu --example nested   # entries inside entries, and a search
+cargo run -p egui-plate-menu --example flat     # a few entries and a separator
+cargo run -p egui-plate-menu --example nested   # entries inside entries, and a search
 ```
 
 ## Boundaries
