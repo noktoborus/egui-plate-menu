@@ -20,8 +20,6 @@ const HEIGHT_SHARE: f32 = 0.8;
 const MIN_WIDTH: f32 = 240.0;
 /// Widest a plate grows on its own.
 const MAX_WIDTH: f32 = 720.0;
-/// How far the wheel has to be turned to step to the next plate.
-const SCROLL_STEP: f32 = 24.0;
 /// Space around the label inside a plate.
 const PADDING: Vec2 = Vec2::new(10.0, 6.0);
 /// Mark of an entry that leads into entries of its own, the right guillemet.
@@ -436,6 +434,7 @@ impl PlateMenu {
         let mut chosen = None;
         let mut close = false;
         let mut scrolled = self.scrolled;
+        let plate = plate_height_of(context);
 
         context.input_mut(|input| {
             let walks: Vec<Walk> = KEYS
@@ -484,10 +483,10 @@ impl PlateMenu {
                 state.push_query(&typed);
             }
 
-            scrolled += input.smooth_scroll_delta.y;
-            let steps = (scrolled / SCROLL_STEP) as i32;
+            scrolled += wheel_plates(&input.events, plate, page);
+            let steps = scrolled.trunc() as i32;
             if steps != 0 {
-                scrolled -= steps as f32 * SCROLL_STEP;
+                scrolled -= steps as f32;
                 for _ in 0..steps.abs() {
                     state.move_selection(if steps > 0 { -1 } else { 1 });
                 }
@@ -809,6 +808,34 @@ fn touched(input: &egui::InputState) -> bool {
             }
         )
     })
+}
+
+/// How many plates the wheel of this frame turned, a positive count away from
+/// the user.
+///
+/// It is read from the events and not from the scroll the toolkit smooths: a
+/// notch is a line, and a line is one plate, however many frames the toolkit
+/// would spread it over and however fast it says a line goes. A turn given in
+/// points — a touchpad, a wheel of fine steps — counts a plate for the height
+/// of one. What a touchpad goes on scrolling by itself after the fingers left
+/// it is no turn of anybody's, and moves nothing.
+fn wheel_plates(events: &[egui::Event], plate: f32, page: isize) -> f32 {
+    events
+        .iter()
+        .filter_map(|event| match event {
+            egui::Event::MouseWheel {
+                unit,
+                delta,
+                source,
+                ..
+            } if *source != egui::MouseWheelSource::Momentum => Some(match unit {
+                egui::MouseWheelUnit::Line => delta.y,
+                egui::MouseWheelUnit::Point => delta.y / plate.max(1.0),
+                egui::MouseWheelUnit::Page => delta.y * page as f32,
+            }),
+            _ => None,
+        })
+        .sum()
 }
 
 /// Whether `key` was pressed this frame, whatever was held.
@@ -1410,10 +1437,17 @@ mod tests {
         let mut menu = PlateMenu::new();
         menu.open(items(5)).expect("the menu opens");
 
-        let scrolled = wheel(&context, &mut menu, -SCROLL_STEP * 3.0);
-        assert!(
-            menu.selected().is_some_and(|selected| selected > 0),
-            "turning the wheel down walks towards the end"
+        let scrolled = wheel(
+            &context,
+            &mut menu,
+            egui::MouseWheelUnit::Line,
+            -3.0,
+            egui::MouseWheelSource::Wheel,
+        );
+        assert_eq!(
+            menu.selected(),
+            Some(2),
+            "three notches down: the third entry"
         );
         assert_eq!(
             scrolled,
@@ -1421,26 +1455,94 @@ mod tests {
             "and what it read is gone from the input"
         );
 
-        let down = menu.selected().expect("the menu is open");
-        wheel(&context, &mut menu, SCROLL_STEP * 3.0);
-        assert!(
-            menu.selected().is_some_and(|selected| selected < down),
-            "turning it up walks back"
+        wheel(
+            &context,
+            &mut menu,
+            egui::MouseWheelUnit::Line,
+            1.0,
+            egui::MouseWheelSource::Wheel,
+        );
+        assert_eq!(menu.selected(), Some(1), "one notch up: one entry back");
+    }
+
+    #[test]
+    fn a_notch_is_one_plate_however_the_toolkit_spreads_it() {
+        let context = context(600.0);
+        let mut menu = PlateMenu::new();
+        menu.open(items(9)).expect("the menu opens");
+        for notch in 1..=4 {
+            wheel(
+                &context,
+                &mut menu,
+                egui::MouseWheelUnit::Line,
+                -1.0,
+                egui::MouseWheelSource::Wheel,
+            );
+            assert_eq!(menu.selected(), Some(notch - 1), "notch {notch}");
+        }
+    }
+
+    #[test]
+    fn a_turn_in_points_counts_a_plate_for_the_height_of_one() {
+        let context = context(600.0);
+        let plate = plate_height_of(&context);
+        let mut menu = PlateMenu::new();
+        menu.open(items(9)).expect("the menu opens");
+        wheel(
+            &context,
+            &mut menu,
+            egui::MouseWheelUnit::Point,
+            -plate * 0.6,
+            egui::MouseWheelSource::Trackpad,
+        );
+        assert_eq!(menu.selected(), None, "less than a plate moves nothing");
+        wheel(
+            &context,
+            &mut menu,
+            egui::MouseWheelUnit::Point,
+            -plate * 0.6,
+            egui::MouseWheelSource::Trackpad,
+        );
+        assert_eq!(
+            menu.selected(),
+            Some(0),
+            "and with the rest a plate is walked"
         );
     }
 
-    /// Turns the wheel for as many frames as the toolkit needs to hand the
-    /// whole delta over, and reports what was left in the input.
-    fn wheel(context: &Context, menu: &mut PlateMenu, delta: f32) -> Vec2 {
+    #[test]
+    fn the_scroll_a_touchpad_goes_on_with_by_itself_moves_nothing() {
+        let context = context(600.0);
+        let mut menu = PlateMenu::new();
+        menu.open_at(items(9), "id4").expect("the menu opens");
+        wheel(
+            &context,
+            &mut menu,
+            egui::MouseWheelUnit::Line,
+            -3.0,
+            egui::MouseWheelSource::Momentum,
+        );
+        assert_eq!(menu.selected(), Some(4));
+    }
+
+    /// Turns the wheel once, and reports what the toolkit left of the scroll
+    /// in the input over the frames it would smooth it across.
+    fn wheel(
+        context: &Context,
+        menu: &mut PlateMenu,
+        unit: egui::MouseWheelUnit,
+        delta: f32,
+        source: egui::MouseWheelSource,
+    ) -> Vec2 {
         let mut left = Vec2::ZERO;
         for frame in 0..8 {
             let events = if frame == 0 {
                 vec![egui::Event::MouseWheel {
-                    unit: egui::MouseWheelUnit::Point,
+                    unit,
                     delta: Vec2::new(0.0, delta),
                     phase: egui::TouchPhase::Move,
                     modifiers: egui::Modifiers::NONE,
-                    source: egui::MouseWheelSource::Wheel,
+                    source,
                 }]
             } else {
                 Vec::new()

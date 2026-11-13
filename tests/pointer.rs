@@ -102,10 +102,10 @@ fn press_beside(harness: &mut Harness<'static, Shown>, button: egui::PointerButt
     harness.step();
 }
 
-/// Turns the wheel by `delta` points, a positive one away from the user.
+/// Turns the wheel by `delta` notches, a positive count away from the user.
 fn wheel(harness: &mut Harness<'static, Shown>, delta: f32) {
     harness.input_mut().events.push(egui::Event::MouseWheel {
-        unit: egui::MouseWheelUnit::Point,
+        unit: egui::MouseWheelUnit::Line,
         delta: egui::vec2(0.0, delta),
         phase: egui::TouchPhase::Move,
         modifiers: egui::Modifiers::NONE,
@@ -134,17 +134,17 @@ fn the_pointer_moved_onto_a_plate_selects_it() {
 #[test]
 fn the_wheel_walks_as_the_arrows_when_nothing_is_selected() {
     let mut menu = harness(Beside::Answers);
-    wheel(&mut menu, -24.0);
+    wheel(&mut menu, -1.0);
     assert_eq!(
         menu.state().menu.selected(),
         Some(0),
         "toward the user: the first entry, as Down"
     );
-    wheel(&mut menu, -24.0);
+    wheel(&mut menu, -1.0);
     assert_eq!(menu.state().menu.selected(), Some(1), "then on, down");
 
     let mut menu = harness(Beside::Answers);
-    wheel(&mut menu, 24.0);
+    wheel(&mut menu, 1.0);
     assert_eq!(
         menu.state().menu.selected(),
         Some(3),
