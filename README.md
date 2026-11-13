@@ -1,5 +1,8 @@
 # egui-plate-menu
 
+The demo, every kind of menu in a browser:
+<https://noktoborus.github.io/egui-plate-menu/>
+
 A menu of wide plates for egui: it stands in the middle of the window, is walked
 by the keys and the pointer and is searched by typing.
 

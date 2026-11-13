@@ -1,0 +1,12 @@
+# The page of the demo: trunk builds this crate for wasm into index.html and
+# writes the site to dist. The addresses are relative, so the site works under
+# any path, as GitHub Pages serves it under the name of the repository.
+[build]
+target = "index.html"
+dist = "dist"
+release = true
+public_url = "./"
+
+[tools]
+# The version of wasm-bindgen of Cargo.toml: the two must be the same.
+wasm_bindgen = "0.2.129"

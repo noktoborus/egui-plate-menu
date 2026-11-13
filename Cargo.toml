@@ -1,3 +1,6 @@
+[workspace]
+members = [".", "demo"]
+
 [package]
 name = "egui-plate-menu"
 description = "egui widget drawing a menu of wide plates, walked by the arrow keys and searched by typing"
@@ -18,3 +21,14 @@ base64 = "0.23"
 eframe = { version = "0.37", default-features = false, features = ["accesskit", "default_fonts", "wayland", "wgpu", "x11"] }
 egui = { version = "0.37", features = ["default_fonts", "monochrome_emoji_fonts"] }
 egui_kittest = { version = "0.37", features = ["eframe", "wgpu", "snapshot"] }
+
+# Fat LTO in one unit of code (`RULE rust.lto` of /workspace/AGENTS.md).
+[profile.release]
+lto = "fat"
+codegen-units = 1
+
+# The page of the demo: trunk builds it with this profile (demo/index.html),
+# the release made small, so the module is quicker to load.
+[profile.wasm-release]
+inherits = "release"
+opt-level = "z"

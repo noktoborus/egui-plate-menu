@@ -1,0 +1,23 @@
+[package]
+name = "egui-plate-menu-demo"
+description = "Every kind of menu of egui-plate-menu, in a browser or a window"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+license = "MIT"
+publish = false
+
+[dependencies]
+egui-plate-menu = { path = ".." }
+egui = { version = "0.37", features = ["default_fonts", "monochrome_emoji_fonts"] }
+eframe = { version = "0.37", default-features = false, features = ["accesskit", "default_fonts", "glow"] }
+log = "0.4"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+eframe = { version = "0.37", default-features = false, features = ["wayland", "x11"] }
+
+# The version of wasm-bindgen must be the one trunk is told in Trunk.toml.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "=0.2.129"
+wasm-bindgen-futures = "0.4"
+web-sys = { version = "0.3", features = ["Document", "HtmlCanvasElement", "Window"] }

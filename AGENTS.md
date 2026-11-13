@@ -23,6 +23,24 @@ THEN a change for one user keeps the other working; a behaviour one of them
 RULE lang = rust, edition 2024
 RULE toolkit = egui; `default_fonts` is left to the application
 RULE license = MIT
+RULE workspace = the crate at the root, the demo in `demo/`
+
+## Demo
+
+RULE demo = `demo/`, a program of eframe: a panel of switches and the menu they
+     shape; native and wasm
+RULE demo.all : every feature of the menu is a switch of the demo, and the
+     switches combine
+THEN a new feature of the menu is a new switch, in the same commit
+RULE demo.page = GitHub Pages, built by trunk 0.22.0 on every push to main
+REF  .github/workflows/pages.yml, demo/Trunk.toml
+RULE demo.loading : the page shows how much of the module has loaded
+REF  demo/loading.mjs
+RULE demo.profile = `wasm-release`: the release, `opt-level = "z"`
+RULE demo.check : trunk does not run here, it needs a newer glibc
+THEN check the page by `cargo build -p egui-plate-menu-demo --target
+     wasm32-unknown-unknown --profile wasm-release`, then
+     `/opt/wasm-bindgen-0.2.129/wasm-bindgen --target web` on the module
 
 ## Code
 
@@ -33,6 +51,8 @@ THEN split into submodules
 RULE module.subject : one module is one subject
 RULE docs.deny = `#![deny(missing_docs)]`; every public item is documented
 RULE comment.body : no inline comments inside a function body
+RULE build.lto = `lto = "fat"`, `codegen-units = 1` in `[profile.release]`
+     (/workspace/AGENTS.md, `RULE rust.lto`)
 RULE format = `cargo fmt`, rustfmt with its defaults
 RULE keys.table : a key the menu takes is a row of `KEYS`, with its `Walk`
 WHY  a caller lists the keys of its window from the table; a key read
@@ -71,6 +91,7 @@ THEN cargo fmt
      cargo clippy --all-targets
      cargo test
      cargo build --examples
+     cargo clippy -p egui-plate-menu-demo --target wasm32-unknown-unknown
 
 ## Commits
 
