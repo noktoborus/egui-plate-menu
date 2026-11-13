@@ -1,0 +1,20 @@
+[package]
+name = "plate-menu"
+description = "egui widget drawing a menu of wide plates, walked by the arrow keys and searched by typing"
+version = "2.0.0"
+edition = "2024"
+rust-version = "1.95"
+license = "MIT"
+
+[dependencies]
+egui = { version = "0.37", default-features = false }
+nucleo-matcher = "0.3"
+thiserror = "2.0"
+
+[build-dependencies]
+base64 = "0.23"
+
+[dev-dependencies]
+eframe = { version = "0.37", default-features = false, features = ["accesskit", "default_fonts", "wayland", "wgpu", "x11"] }
+egui = { version = "0.37", features = ["default_fonts", "monochrome_emoji_fonts"] }
+egui_kittest = { version = "0.37", features = ["eframe", "wgpu", "snapshot"] }
