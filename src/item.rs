@@ -13,6 +13,10 @@ pub struct MenuItem {
     pub id: String,
     /// Text of the entry.
     pub label: String,
+    /// A mark drawn before the label, saying what kind of thing the entry
+    /// is; no part of the label, so neither searched nor read out. Empty when
+    /// there is none.
+    pub icon: String,
     /// What stands right of the label — a key sequence, a value, a count, a
     /// widget — an empty text when there is none.
     pub detail: Detail,
@@ -49,6 +53,7 @@ impl MenuItem {
         Self {
             id: id.into(),
             label: label.into(),
+            icon: String::new(),
             detail: Detail::default(),
             hint: String::new(),
             search: String::new(),
@@ -70,6 +75,13 @@ impl MenuItem {
             separator: true,
             ..Self::default()
         }
+    }
+
+    /// A mark drawn before the label: what kind of thing the entry is. The
+    /// query does not match it and a screen reader is given the label alone.
+    pub fn icon(mut self, icon: impl Into<String>) -> Self {
+        self.icon = icon.into();
+        self
     }
 
     /// What stands right of the label, which is where a key sequence, a value

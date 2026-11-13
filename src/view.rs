@@ -1025,7 +1025,17 @@ fn label(row: &Row, font: &FontId, color: Color32, marked: Color32) -> LayoutJob
         append(&row.parents, &row.matched_parents);
         append(&format!("  {PARENTS}  "), &[]);
     }
-    append(&row.label, &row.matched_label);
+    let mut text = row.label.as_str();
+    if row.back
+        && let Some(rest) = text.strip_prefix(BACK)
+    {
+        append(&format!("{BACK} "), &[]);
+        text = rest.trim_start();
+    }
+    if !row.icon.is_empty() {
+        append(&format!("{}  ", row.icon), &[]);
+    }
+    append(text, &row.matched_label);
     job
 }
 
@@ -1053,7 +1063,10 @@ fn plate_width(context: &Context, rows: &[Row]) -> f32 {
     let longest = rows
         .iter()
         .map(|row| {
-            let mut text = row.label.clone();
+            let mut text = match row.icon.is_empty() {
+                true => row.label.clone(),
+                false => format!("{}  {}", row.icon, row.label),
+            };
             let mut widget = 0.0;
             match &row.detail {
                 Detail::Text(detail) if !detail.is_empty() => {

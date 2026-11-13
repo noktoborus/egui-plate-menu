@@ -58,6 +58,7 @@ and never read: what `Shift+Enter` means is the caller's.
 | --- | --- |
 | `new(id, label)` | an entry |
 | `separator()` | a line |
+| `icon(text)` | a mark before the label: what kind of thing the entry is; not searched, not read out; the row back of a level carries the mark of the level |
 | `detail(text)`, `detail(Detail::widget(width, f))` | right of the label: a key, a value, a count, or a widget of the caller |
 | `hint(text)` | under the pointer |
 | `search(text)` | more text the query matches, drawn nowhere |
@@ -68,6 +69,13 @@ and never read: what `Shift+Enter` means is the caller's.
 | `choosable(true)` | an entry with children is chosen; `Right` and its zone `›` step in |
 | `opens_at(id)` | where the selection lands in the level below |
 | `notice(text)`, `notice(Notice::widget(f))` | above the plates while the level below is shown, in place of the notice of the menu: the editor of a value |
+
+An icon stands before the label, and the row back carries the icon of the
+level it leads to:
+
+| top | the level of `0: zsh` |
+| --- | --- |
+| ![Entries with icons][picture-icons] | ![A level of entries with icons][picture-icons-level] |
 
 ## The plates
 
@@ -363,3 +371,5 @@ uses `layer_id`.
 [picture-split]: img/split.png
 [picture-drag]: img/drag.png
 [picture-detail-widget]: img/detail-widget.png
+[picture-icons]: img/icons.png
+[picture-icons-level]: img/icons-level.png

@@ -127,6 +127,26 @@ fn a_level_stepped_into() {
     picture(&mut harness, "level");
 }
 
+/// Entries with an icon before the label, and the row back that carries the
+/// icon of the level it leads to.
+#[test]
+fn icons_before_the_labels() {
+    let pane = |id: &str| MenuItem::new(id, id).icon("\u{229f}");
+    let items = vec![
+        MenuItem::new("0: zsh", "0: zsh")
+            .icon("\u{1f5d6}")
+            .detail("2")
+            .children(vec![pane("0.0 zsh"), pane("0.1 vim")]),
+        MenuItem::new("1: logs", "1: logs").icon("\u{1f5d6}"),
+        MenuItem::separator(),
+        MenuItem::new("new", "New window"),
+    ];
+    let mut harness = harness(opened(items), NARROW);
+    picture(&mut harness, "icons");
+    harness.key_press(egui::Key::ArrowRight);
+    picture(&mut harness, "icons-level");
+}
+
 /// The menu a query is about to be typed over.
 #[test]
 fn before_a_query() {
