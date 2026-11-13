@@ -44,13 +44,23 @@ const WAVE_LENGTH: f32 = 8.0;
 const STRIP_GAP: f32 = 3.0;
 
 /// What a click beside the menu does.
+///
+/// The right button is the same in all three: it steps out of a level, as
+/// `Left` does; at the top it closes the menu, unless the menu is
+/// [`Beside::Ignored`].
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum Beside {
     /// Closes it: a menu somebody opened.
     #[default]
     Closes,
-    /// Nothing; only an entry or `Esc` leaves it: a menu that asks a question
-    /// a stray click must not take away.
+    /// The left button chooses the selected entry, as `Enter` does, and closes
+    /// the menu when no entry is selected; a finger and the middle button
+    /// close it: a menu walked by the pointer, which put the selection where
+    /// it wanted it on the way out.
+    Answers,
+    /// Nothing; only an entry or `Esc` leaves it, and the right button on the
+    /// menu steps out without closing it at the top: a menu that asks a
+    /// question a stray click must not take away.
     Ignored,
 }
 
@@ -91,6 +101,8 @@ pub struct PlateMenu {
     nothing_found: String,
     step_in_label: String,
     beside: Beside,
+    beside_at_open: Beside,
+    finger: bool,
     max_plates: Option<usize>,
     rect: Rect,
     /// Where the notice stood in the last frame: a widget of the caller
@@ -153,6 +165,8 @@ impl PlateMenu {
             nothing_found: String::new(),
             step_in_label: String::new(),
             beside: Beside::default(),
+            beside_at_open: Beside::default(),
+            finger: false,
             max_plates: None,
             rect: Rect::NOTHING,
             notice_rect: Rect::NOTHING,
@@ -214,11 +228,18 @@ impl PlateMenu {
         self.step_in_label = text.into();
     }
 
-    /// What a click beside the menu does.
+    /// What a click beside the menu does on every opening: [`Beside::Closes`]
+    /// unless set here.
+    pub fn with_beside(mut self, beside: Beside) -> Self {
+        self.beside_at_open = beside;
+        self
+    }
+
+    /// What a click beside the menu does, until the next opening.
     ///
     /// It is set after the menu was opened, because an opening puts it back to
-    /// [`Beside::Closes`]: a menu that holds on to a click is the exception, and
-    /// the next menu must not inherit it.
+    /// what [`Self::with_beside`] set: a menu that holds on to a click is the
+    /// exception, and the next menu must not inherit it.
     pub fn beside(&mut self, beside: Beside) {
         self.beside = beside;
     }
@@ -238,7 +259,7 @@ impl PlateMenu {
         }
 
         self.notice = None;
-        self.beside = Beside::default();
+        self.beside = self.beside_at_open;
         let mut state = MenuState::new(items);
         state.rest();
         self.state = Some(state);
@@ -363,8 +384,9 @@ impl PlateMenu {
     /// Draws the menu and returns the entry that was chosen this frame.
     ///
     /// The menu closes itself on `Esc` with no query typed at the top level,
-    /// on a click beside it and when an entry is chosen. In a level, `Esc`
-    /// steps out of it.
+    /// on a click beside it that does not choose, on the right button at the
+    /// top level and when an entry is chosen. In a level, `Esc` and the right
+    /// button step out of it.
     ///
     /// What was held down is read before anything is answered and belongs to
     /// the choice: a key that the menu takes out of the input is gone by the
@@ -374,16 +396,26 @@ impl PlateMenu {
         self.state.as_ref()?;
 
         let held = context.input(|input| input.modifiers);
-        let chosen = self.keys(context).or_else(|| {
-            self.drag(context);
-            self.draw(context)
-        });
+        if let Some(finger) =
+            context.input(|input| input.pointer.any_pressed().then(|| touched(input)))
+        {
+            self.finger = finger;
+        }
+        let chosen = self
+            .keys(context)
+            .or_else(|| {
+                self.drag(context);
+                self.draw(context)
+            })
+            .or_else(|| {
+                self.right_click(context);
+                self.click_beside(context)
+            });
         if let Some(id) = chosen {
             self.close();
             return Some(Chosen { id, held });
         }
 
-        self.click_outside(context);
         self.frames = self.frames.saturating_add(1);
         None
     }
@@ -457,7 +489,10 @@ impl PlateMenu {
             if steps != 0 {
                 scrolled -= steps as f32 * SCROLL_STEP;
                 for _ in 0..steps.abs() {
-                    state.move_selection(if steps > 0 { -1 } else { 1 });
+                    match state.selection() {
+                        None => state.select_first(),
+                        Some(_) => state.move_selection(if steps > 0 { -1 } else { 1 }),
+                    }
                 }
             }
 
@@ -546,6 +581,14 @@ impl PlateMenu {
         let windowed = last - first < rows.len();
         let (above, below) = hidden(&rows, first, last);
         let mut clicked = None;
+        let mut pointed = None;
+        let moved = context.input(|input| {
+            let moving = input
+                .events
+                .iter()
+                .any(|event| matches!(event, egui::Event::PointerMoved(_)));
+            moving && !input.pointer.any_down() && !input.any_touches()
+        });
 
         let room = self.room(whole.is_some(), width, beside);
         let window = context.content_rect();
@@ -578,10 +621,13 @@ impl PlateMenu {
                     }
                     let top = ui.cursor().top();
                     for (index, row) in rows.iter().enumerate().take(last).skip(first) {
-                        if let Some(click) =
-                            plate(ui, row, Some(index) == selected, width, &self.step_in_label)
-                        {
+                        let (click, hovered) =
+                            plate(ui, row, Some(index) == selected, width, &self.step_in_label);
+                        if let Some(click) = click {
                             clicked = Some((index, click));
+                        }
+                        if hovered && moved {
+                            pointed = Some(index);
                         }
                     }
                     if nothing_found {
@@ -603,6 +649,12 @@ impl PlateMenu {
         self.chrome = Some(Chrome::of(self.rect.height(), plates, strips, self.chrome));
         self.whole(context, whole, width, beside);
         let state = self.state.as_mut()?;
+        if let Some(index) = pointed
+            && Some(index) != selected
+            && state.select(index)
+        {
+            context.request_repaint();
+        }
         match clicked? {
             (index, Click::Choose) => state.choose(index),
             (index, Click::StepIn) => {
@@ -676,29 +728,90 @@ impl PlateMenu {
             .is_some_and(|focused| self.notice_rect.contains_rect(focused.rect))
     }
 
-    /// Closes the menu when a click lands beside it.
+    /// Steps out on the right button, on the menu or beside it, as `Left` does,
+    /// and closes the menu at the top: the button that steps back in a list of
+    /// files and pages. A menu set to [`Beside::Ignored`] is not closed by it,
+    /// and takes nothing from it beside the menu.
+    fn right_click(&mut self, context: &Context) {
+        if self.rect == Rect::NOTHING || self.frames == 0 {
+            return;
+        }
+        let (position, right) = context.input(|input| {
+            let pointer = &input.pointer;
+            (
+                pointer.interact_pos(),
+                pointer.button_clicked(egui::PointerButton::Secondary),
+            )
+        });
+        let Some(position) = position.filter(|_| right) else {
+            return;
+        };
+        let ignored = self.beside == Beside::Ignored;
+        if ignored && !self.rect.contains(position) {
+            return;
+        }
+        let Some(state) = self.state.as_mut() else {
+            return;
+        };
+        if !state.step_out() && !ignored {
+            self.close();
+        }
+    }
+
+    /// Answers a click that lands beside the menu, and returns what it chose.
     ///
-    /// A pointer that wanders off changes nothing: the menu stands where it is
-    /// and is left by a key or by a click, never by the pointer alone. A menu set
-    /// to [`Beside::Ignored`] is not left by that click either.
+    /// [`Beside::Closes`] closes the menu. [`Beside::Answers`] chooses the
+    /// selected entry on the left button, as `Enter` does, and closes the menu
+    /// when none is selected; a finger has no pointer to put the selection
+    /// anywhere, so its touch closes the menu, as the middle button does. The
+    /// right button is [`PlateMenu::right_click`]'s. A pointer that wanders off
+    /// changes nothing: the menu is left by a key or by a click, never by the
+    /// pointer alone. A menu set to [`Beside::Ignored`] is not left by that
+    /// click either.
     ///
     /// The place of the click is `interact_pos`, not `latest_pos`: a finger
     /// that leaves the screen ends its click and is gone in one frame, and
     /// the place it is gone from is kept only there.
-    fn click_outside(&mut self, context: &Context) {
+    fn click_beside(&mut self, context: &Context) -> Option<String> {
         if self.beside == Beside::Ignored || self.rect == Rect::NOTHING || self.frames == 0 {
-            return;
+            return None;
         }
 
-        let (position, clicked) =
-            context.input(|input| (input.pointer.interact_pos(), input.pointer.any_click()));
-        let Some(position) = position else {
-            return;
-        };
-        if clicked && !self.rect.contains(position) {
-            self.close();
+        let (position, left, clicked) = context.input(|input| {
+            let pointer = &input.pointer;
+            (
+                pointer.interact_pos(),
+                pointer.button_clicked(egui::PointerButton::Primary),
+                pointer.any_click() && !pointer.button_clicked(egui::PointerButton::Secondary),
+            )
+        });
+        if !clicked || position.is_none_or(|position| self.rect.contains(position)) {
+            return None;
         }
+        if self.beside == Beside::Answers && left && !self.finger {
+            let state = self.state.as_mut()?;
+            if state.selection().is_some() {
+                return state.accept();
+            }
+        }
+        self.close();
+        None
     }
+}
+
+/// True when a finger touched the screen on this frame: the toolkit makes a
+/// press of the left button of a touch as well, and this is what tells them
+/// apart.
+fn touched(input: &egui::InputState) -> bool {
+    input.events.iter().any(|event| {
+        matches!(
+            event,
+            egui::Event::Touch {
+                phase: egui::TouchPhase::Start,
+                ..
+            }
+        )
+    })
 }
 
 /// Whether `key` was pressed this frame, whatever was held.
@@ -871,7 +984,8 @@ fn nothing(ui: &mut egui::Ui, text: &str, width: f32) {
     );
 }
 
-/// One plate. Returns what a click on it asked for.
+/// One plate. Returns what a click on it asked for, and whether the pointer
+/// stands on it.
 ///
 /// An entry that is chosen and has entries of its own is two buttons: the
 /// label chooses it and the zone at its right end steps in. A pointer has no
@@ -883,10 +997,10 @@ fn plate(
     selected: bool,
     width: f32,
     into_label: &str,
-) -> Option<Click> {
+) -> (Option<Click>, bool) {
     if row.separator {
         ui.separator();
-        return None;
+        return (None, false);
     }
 
     let height = plate_height(ui);
@@ -1000,10 +1114,12 @@ fn plate(
         response.on_hover_text(&row.hint)
     };
 
+    let hovered = response.hovered() || zone_response.as_ref().is_some_and(|zone| zone.hovered());
     if zone_response.is_some_and(|zone| zone.clicked()) {
-        return Some(Click::StepIn);
+        return (Some(Click::StepIn), hovered);
     }
-    (response.clicked() && row.is_reachable()).then_some(Click::Choose)
+    let click = (response.clicked() && row.is_reachable()).then_some(Click::Choose);
+    (click, hovered)
 }
 
 /// The label of a plate, the levels above it in front while searching, with

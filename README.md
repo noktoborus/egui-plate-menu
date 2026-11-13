@@ -1,7 +1,7 @@
 # plate-menu
 
 A menu of wide plates for egui: it stands in the middle of the window, is walked
-by the keys and is searched by typing.
+by the keys and the pointer and is searched by typing.
 
 ## Scope
 
@@ -42,7 +42,8 @@ fn frame(context: &egui::Context, menu: &mut PlateMenu, asked: bool) {
 | `notice(text)`, `notice(Notice::widget(f))` | the lines above everything, or a widget of the caller drawn there |
 | `nothing_found(text)` | the line of a query that finds nothing; kept across `open` |
 | `step_in_label(text)` | what a screen reader calls the zone `›` of a split entry; kept across `open` |
-| `beside(Closes \| Ignored)` | what a click beside the menu does |
+| `with_beside(Closes \| Answers \| Ignored)` | what a click beside the menu does on every opening; `Closes` without it |
+| `beside(Closes \| Answers \| Ignored)` | the same, until the next opening |
 | `show(context)` | draws a frame; `Some(Chosen)` on the frame an entry is chosen |
 | `close()`, `is_open()`, `selected()` | `selected()` is `None` while no entry is selected |
 | `level()` | the identifiers of the levels the menu stands in, the outermost first; none at the top: a caller that edits a value in a level knows when it is entered and left |
@@ -292,7 +293,7 @@ time:
 
 | input | what it does |
 | --- | --- |
-| `Up`, `Down`, wheel | walk, wrapping |
+| `Up`, `Down`, wheel | walk, wrapping; the wheel with no entry selected selects the first |
 | `PageUp`, `PageDown` | walk by the plates shown, stopping at the ends |
 | `Home`, `End` | the first and the last entry; with a query, the caret to its start and end |
 | `Right`, the zone `›` | step into the entry |
@@ -304,15 +305,32 @@ time:
 | `Ctrl+Backspace` | clear the query |
 | `Tab` | nothing |
 | drag | move the window |
-| click beside | `Beside::Closes` closes, `Beside::Ignored` nothing |
+| the pointer moved onto an entry | select it |
+| right button, on the menu or beside | step out, as `Left`; at the top, close |
+| left button beside | `Beside::Answers`: choose the selected entry, as `Enter`; with none selected, close |
+| a finger or the middle button beside | `Beside::Answers`: close |
+| click beside | `Beside::Closes`: close |
+| anything beside | `Beside::Ignored`: nothing; the right button on the menu steps out and never closes |
 | pointer leaving | nothing |
 
 The keys are the table `KEYS`, each with its `Walk`: the menu acts on it,
 and a caller lists the keys of its window from it.
 
-A menu opens with no entry selected. Then `Down`, `PageDown` and `Home`
-select the first entry, `Up`, `PageUp` and `End` the last, `Right` and
-`Enter` do nothing, and a query selects its first hit.
+A menu opens with no entry selected. Then `Down`, `PageDown`, `Home` and the
+wheel select the first entry, `Up`, `PageUp` and `End` the last, the pointer
+moved onto an entry selects it, `Right` and `Enter` do nothing, and a query
+selects its first hit.
+
+The selection follows the pointer only when the pointer moves: rows walked by
+a key or the wheel under a pointer that stands still keep the selection the
+key gave them, and a menu opened under a pointer opens with none. A touch
+moves no selection, since a finger has no pointer to rest; the toolkit makes a
+press of the left button of every touch, and the menu tells the two apart by
+the touch.
+
+The menu takes no click away from the window behind it. A caller that wants
+nothing behind reached while the menu stands lays a layer under
+`layer_id()`, a `Modal` with nothing in it say.
 
 These keys, the text, a paste and the wheel are taken out of the input, press
 and release, so the view behind does not walk with the menu. `Tab` is taken so
